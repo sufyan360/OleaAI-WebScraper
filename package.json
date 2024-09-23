@@ -12,12 +12,16 @@
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/material": "^6.1.1",
+    "chart.js": "^4.4.4",
     "firebase": "^10.13.2",
+    "leaflet": "^1.9.4",
     "next": "14.2.12",
     "node-pandas": "^1.0.5",
     "pandas": "^0.0.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "eslint": "^8",

@@ -7,7 +7,7 @@ import { getAnalytics } from "firebase/analytics";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env("GOOGLE_API_KEY"),
+  apiKey: "AIzaSyANI-SvxqDpQHoVkLtK96WLR2JXr_yQE20",
   authDomain: "oleampoxscraper.firebaseapp.com",
   projectId: "oleampoxscraper",
   storageBucket: "oleampoxscraper.appspot.com",
