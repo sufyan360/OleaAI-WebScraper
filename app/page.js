@@ -1,10 +1,19 @@
-"use client"
+// app/page.js
+'use client';
 import ScraperButton from './components/scraperbutton';
 import TimeFrameChart from './components/timeframechart';
 import WorldMap from './components/worldmap';
+import TweetsList from './components/TweetsList'; // Import the new component
 import { Container, Typography, Grid, Box } from '@mui/material';
+import { useState } from 'react';
 
 export default function Home() {
+  const [tweets, setTweets] = useState([]);
+
+  const handleTweetsFetched = (fetchedTweets) => {
+    setTweets(fetchedTweets);
+  };
+
   return (
     <Container>
       <Typography
@@ -17,7 +26,7 @@ export default function Home() {
         Mpox Misinformation Dashboard
       </Typography>
 
-      <ScraperButton />
+      <ScraperButton onTweetsFetched={handleTweetsFetched} />
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12} md={6}>
@@ -28,6 +37,13 @@ export default function Home() {
           <WorldMap />
         </Grid>
       </Grid>
+
+      {/* Display the tweets at the bottom */}
+      {tweets.length > 0 && (
+        <Box mt={4}>
+          <TweetsList tweets={tweets} />
+        </Box>
+      )}
     </Container>
   );
 }
