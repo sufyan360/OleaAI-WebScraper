@@ -1,7 +1,6 @@
 'use client';
 import { Button, CircularProgress, Box } from '@mui/material';
 import { useState } from 'react';
-import uploadToFirebase from '../api/uploadData/route'; 
 
 const ScraperButton = ({ onTweetsFetched }) => {
   const [loading, setLoading] = useState(false);
@@ -15,14 +14,22 @@ const ScraperButton = ({ onTweetsFetched }) => {
         throw new Error('Failed to scrape tweets');
       }
 
-      const data = await response.json(); 
-      if (data && data.filteredTweets) {
-        onTweetsFetched(data.filteredTweets);
-        
-        // Upload tweets to Firebase
-        await uploadToFirebase(data.filteredTweets); 
-      }
+      const data = await response.json();
 
+      if (data && data.filteredTweets) {
+        onTweetsFetched(data.filteredTweets);  // Update the UI with fetched tweets
+
+        // Upload scraped tweets to Firebase
+        await fetch('/api/uploadData', {
+          method: 'POST',
+          body: JSON.stringify({ tweets: data.filteredTweets }),  // Send tweets to upload
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Tweets uploaded successfully!');
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('Error starting scraping.');
@@ -47,3 +54,5 @@ const ScraperButton = ({ onTweetsFetched }) => {
 };
 
 export default ScraperButton;
+
+

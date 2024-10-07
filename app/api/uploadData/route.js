@@ -1,28 +1,29 @@
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import db from '@/backend/firebase'; 
+import { db } from '@/backend/firebase';  // Firestore instance
 
-async function uploadToFirebase(tweets) {
-  const collectionRef = collection(db, 'tweets');
+export async function POST(req, res) {
+    try {
+        const { tweets } = await req.json();  
+        const collectionRef = db.collection('tweets');  // Correct usage for Firebase Admin SDK
 
-  try {
-    for (let tweet of tweets) {
-      const tweetLink = tweet.link;
+        // Iterate over the tweets and upload to Firestore
+        for (let tweet of tweets) {
+            const tweetId = tweet.id;  
 
-      const tweetQuery = query(collectionRef, where('link', '==', tweetLink));
-      const querySnapshot = await getDocs(tweetQuery);
+            // Query for existing tweets using the correct Firestore query methods
+            const existingTweetQuery = await collectionRef.where('id', '==', tweetId).get();
 
-      // If no duplicate tweets found, upload the new tweet
-      if (querySnapshot.empty) {
-        await addDoc(collectionRef, tweet);
-        console.log(`Uploaded tweet with ID ${tweetLink}`);
-      } else {
-        console.log(`Duplicate tweet with ID ${tweetLink} skipped.`);
-      }
+            // If the tweet doesn't exist, add it to Firestore
+            if (existingTweetQuery.empty) {
+                await collectionRef.add({ ...tweet, id: tweetId });
+                console.log(`Uploaded tweet with ID ${tweetId}`);
+            } else {
+                console.log(`Duplicate tweet with ID ${tweetId} skipped.`);
+            }
+        }
+
+        return new Response(JSON.stringify({ message: 'Tweets uploaded successfully' }), { status: 200 });
+    } catch (error) {
+        console.error('Error uploading tweets to Firebase:', error);
+        return new Response(JSON.stringify({ message: 'Error uploading tweets', error }), { status: 500 });
     }
-    console.log('Data uploaded to Firebase successfully!');
-  } catch (error) {
-    console.error('Error uploading tweets to Firebase:', error);
-  }
 }
-
-export default uploadToFirebase;

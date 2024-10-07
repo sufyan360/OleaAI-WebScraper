@@ -1,23 +1,18 @@
-// Import the functions you need from the SDKs you need
-const { initializeApp } = require("firebase/app");
-const { getFirestore } = require("firebase/firestore");
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import { promises as fs } from 'fs';
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID
-};
+// Initialize Firebase Admin SDK
+if (!admin.apps.length) {
+  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+  const serviceAccount = JSON.parse(await fs.readFile(serviceAccountPath, 'utf8'));
 
-const db = getFirestore(app);
-module.exports = db;
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
+const db = getFirestore();  // Firestore instance for the Admin SDK
+
+export { db };
