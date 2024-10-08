@@ -1,15 +1,30 @@
-// backend/firebase.js
-import admin from 'firebase-admin';
+const admin = require('firebase-admin');
+const fs = require('fs').promises;
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;  // Make sure this path is correct
 
-// Check if Firebase Admin has already been initialized
-if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY); // Load from env
-    admin.initializeApp({
+let initialized = false;
+
+async function initializeFirebase() {
+  if (!initialized) {
+    try {
+      const serviceAccount = JSON.parse(await fs.readFile(serviceAccountPath, 'utf8'));
+      admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: process.env.FIREBASE_DATABASE_URL,  // Ensure you have this in your .env file
-    });
+        databaseURL: process.env.FIREBASE_DATABASE_URL,
+      });
+      initialized = true;
+      console.log("Firebase App Initialized");
+    } catch (error) {
+      console.error("Error initializing Firebase:", error);
+    }
+  } else {
+    console.log("Firebase App already initialized");
+  }
 }
 
-const db = admin.firestore();  // Get Firestore instance
+async function getFirestore() {
+  await initializeFirebase();
+  return admin.firestore();  
+}
 
-export { db };
+module.exports = { getFirestore };

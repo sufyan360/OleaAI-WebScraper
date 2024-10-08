@@ -1,13 +1,14 @@
 const { checkStatementWithGPT } = require('../services/gptService');
 const dataController = require('./dataController');
 const {collection, getDocs } = require("firebase/firestore");
-const db = require('../firebase');
+const { getFirestore } = require('../firebase');
 const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
 const stemmer = natural.PorterStemmer;
 
 const compareController = {
   async compareStatement(req, res) {
+    const db = await getFirestore();
     const { statement } = req.body;
 
     try {

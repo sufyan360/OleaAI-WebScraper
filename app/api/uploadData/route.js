@@ -1,9 +1,10 @@
-import { db } from '@/backend/firebase'; 
+import { getFirestore } from '@/backend/firebase';  
 import { NextResponse } from 'next/server';  
 
 export async function POST(req) {  
     try {
         const { tweets } = await req.json();  
+        const db = await getFirestore();  
         const collectionRef = db.collection('tweets');  
 
         // Loop through the tweets to upload each to Firestore
@@ -20,11 +21,10 @@ export async function POST(req) {
                 console.log(`Duplicate tweet with ID ${tweetId} skipped.`);
             }
         }
-
+        console.log("Tweets Uploaded")
         return NextResponse.json({ message: 'Tweets uploaded successfully' }, { status: 200 });
     } catch (error) {
         console.error('Error uploading tweets to Firebase:', error);
-
         return NextResponse.json({ message: 'Error uploading tweets', error }, { status: 500 });
     }
 }

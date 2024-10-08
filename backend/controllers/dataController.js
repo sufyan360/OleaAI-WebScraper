@@ -1,8 +1,9 @@
 const {collection, addDoc, getDocs, serverTimestamp } = require("firebase/firestore");
 const statementModel = require('../models/statementModel');
-const db = require('../firebase');
+const { getFirestore } = require('../firebase');
 
 const dataController = {
+  
   async saveStatement(req, res) {
 
     if (!req.body) {
@@ -16,6 +17,7 @@ const dataController = {
     }
 
     try {
+      const db = await getFirestore();
       const docRef = await addDoc(collection(db, 'statements'), {
         statement,
         result: {

@@ -6,6 +6,7 @@ import WorldMap from './components/worldmap';
 import TweetsList from './components/tweetsList'; // Import the new component
 import { Container, Typography, Grid, Box } from '@mui/material';
 import { useState } from 'react';
+import FetchMpoxData from './components/fetchMpoxDataButton';
 
 export default function Home() {
   const [tweets, setTweets] = useState([]);
@@ -44,6 +45,9 @@ export default function Home() {
           <TweetsList tweets={tweets} />
         </Box>
       )}
+      <Box>
+        <FetchMpoxData />
+      </Box>
     </Container>
   );
 }
