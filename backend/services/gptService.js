@@ -6,7 +6,8 @@ const checkStatementWithGPT = async (statement, verifiedData) => {
   try {
     const systemPrompt = `
         You are an AI system designed to verify statements against trusted sources like the CDC, WHO, and scholarly databases. Your task is to assess the accuracy of the given statement and provide structured feedback in JSON format.
-
+        You will mostly deal with statements regarding Mpox which may show up in various forms such as #mpox.
+        Mpox can also be known as Monkeypox. Do not forget to refer to the sources before making an analysis and providing an answer. 
         The JSON structure should look like this:
         {
           "isMisinformation": true,  // Set to true if misinformation is detected; false if the information is correct.
