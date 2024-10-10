@@ -1,6 +1,6 @@
-## MPox Misinformation Web Scraper
+# MPox Misinformation Web Scraper
 
-# Components:
+## Components:
 
 - Scraper Button
 - Time Chart
