@@ -19,7 +19,7 @@ const FetchMpoxData = () => {
 
   return (
     <div>
-      <button onClick={handleFetchData}>Fetch Mpox Resources</button>
+      <button sx={{ backgroundColor: '#849785', color: '#fafafa', borderRadius: 1 }} onClick={handleFetchData}>Fetch Mpox Resources</button>
       {error && <p>{error}</p>}
       {mpoxData.length > 0 && (
         <ul>
