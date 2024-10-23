@@ -8,7 +8,8 @@ import { Container, Typography, Grid, Box, AppBar, Toolbar, IconButton, Link} fr
 import { useState } from 'react';
 import FetchMpoxData from './components/fetchMpoxDataButton';
 import MisinformationTweets from './components/misinformationTweets';
-import { Facebook, Twitter, Instagram, LinkedIn } from '@mui/icons-material';
+import Icon from '@mdi/react';
+import { mdiFacebook as Facebook, mdiTwitter as Twitter, mdiLinkedin as LinkedIn } from '@mdi/js';
 
 export default function Home() {
   const [tweets, setTweets] = useState([]);
@@ -100,18 +101,9 @@ export default function Home() {
           </Link>
         </Box>
         <Box>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Facebook />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Twitter />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Instagram />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <LinkedIn />
-          </IconButton>
+          <Icon path={Facebook} size={1} href="" sx={{ color: 'white' }} />
+          <Icon path={Twitter} size={1} href="" sx={{ color: 'white' }} />
+          <Icon path={LinkedIn} size={1} href="" sx={{ color: 'white' }} />
         </Box>
       </Box>
     </Container>
