@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { compareStatement } from '@/backend/controllers/compareController';
+import { compareStatement, saveStatement } from '@/backend/controllers/compareController';
 
 export async function POST(req) {
   try {
     console.log("LANDED");
     const { tweet } = await req.json();
 
-    // Prepare statement data for misinformation check
     const statementData = {
       statement: tweet.fullText,
-      isMisinformation: null,  // Will be determined
-      reasoning: null,         // Will be determined
-      verifiedInfo: null       // Will be determined
+      isMisinformation: null,
+      reasoning: null,
+      verifiedInfo: null
     };
 
-    // Call compareStatement to check for misinformation
-    await compareStatement({
-      body: statementData
-    });
+    // Compare statement for misinformation
+    const comparisonResult = await compareStatement({ body: statementData });
+
+    // Save the statement and return the result
+    await saveStatement(comparisonResult);
 
     return NextResponse.json({ message: 'Misinformation check complete' }, { status: 200 });
   } catch (error) {

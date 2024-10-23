@@ -1,4 +1,3 @@
-// src/services/gptService.js
 const axios = require('axios');
 require('dotenv').config(); 
 
@@ -34,58 +33,77 @@ const checkStatementWithGPT = async (statement, verifiedData) => {
         For other statements, perform a general comparison and indicate if any inaccuracies exist. Structure your response clearly, focusing on factual analysis.
     `; 
 
-    const userPrompt = `
-    Now, verify the following statement:
-    "${statement}"
+    const userPrompt = `Now, verify the following statement:
+      "${statement}"
     Verified Data: ${verifiedData}
   `;
+    
+    console.log('Sending request to GPT API...');
+    console.log(`System Prompt: ${systemPrompt}`);
+    console.log(`User Prompt: ${userPrompt}`);
 
-    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+    
+  const response = await axios.post( 'https://openrouter.ai/api/v1/chat/completions',
+    {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      model: 'gpt-3.5-turbo', 
+      model: 'meta-llama/llama-3.1-70b-instruct:free',
       stream: true
-    }, {
+    },
+    {
       headers: {
         Authorization: `Bearer ${process.env.OPEN_ROUTER_KEY}`,
       },
-      responseType: 'text'
-    });
-    return processResponse(response.data);
-  } catch (error) {
-    console.error('Error calling GPT API:', error);
-    throw error;
-  }
+      responseType: 'stream'
+    }
+  );
+  console.log('Received response stream, processing...');
+  return await processStream(response.data);
+} catch (error) {
+  console.error('Error calling GPT API:', error);
+  throw error;
+}
 };
 
-// Process the raw response data
-const processResponse = (data) => {
-  const lines = data.split('\n');
+// Process the streaming response correctly
+const processStream = async (stream) => {
   let completeResponse = '';
 
-  for (const line of lines) {
-    if (line.startsWith('data: ')) {
-      const jsonData = line.replace('data: ', '').trim();
-      if (jsonData === '[DONE]') continue; // Ignore end signal
+  // Read the stream asynchronously
+  for await (const chunk of stream) {
+    // Convert chunk to string
+    const chunkStr = chunk.toString();
+    
+    const lines = chunkStr.split('\n');
 
-      try {
-        const json = JSON.parse(jsonData);
-        if (json.choices && json.choices[0].delta) {
-          const deltaContent = json.choices[0].delta.content;
-          if (deltaContent) {
-            completeResponse += deltaContent; // Collect the complete response
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const jsonData = line.replace('data: ', '').trim();
+
+        if (jsonData === '[DONE]') continue;
+
+        try {
+          const json = JSON.parse(jsonData);
+          if (json.choices && json.choices[0].delta) {
+            const deltaContent = json.choices[0].delta.content;
+            if (deltaContent) {
+              completeResponse += deltaContent;
+            }
           }
+        } catch (error) {
+          console.error('Error parsing stream JSON:', error);
         }
-      } catch (error) {
-        console.error('Error parsing JSON:', error);
       }
     }
   }
+  console.log('Stream processing complete.');
+  if (!completeResponse) {
+    throw new Error('No response received from GPT');
+  }
 
-  return completeResponse; // Return the complete response
+  return completeResponse;
 };
-
 
 module.exports = { checkStatementWithGPT };

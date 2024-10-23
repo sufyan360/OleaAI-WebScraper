@@ -6,16 +6,14 @@ const stemmer = natural.PorterStemmer;
 const { getFirestore } = require('../firebase');
 
 const compareController = {
-  async compareStatement(req, res) {
+  async compareStatement(req) {
     const { statement } = req.body;
 
     try {
       const verifiedData = await fetchVerifiedDataFromFirestore();
-
-      const MAX_VERIFIED_ITEMS = 3; // Limit the number of relevant items
+      const MAX_VERIFIED_ITEMS = 3;
 
       const relevantItems = identifyRelevantItems(statement, verifiedData).slice(0, MAX_VERIFIED_ITEMS);
-
       const formattedRelevantData = relevantItems.map(item => `
         Source: ${item.source}
         Title: ${item.title}
@@ -23,23 +21,41 @@ const compareController = {
         Content: ${item.content}
       `).join('\n');
 
-      const result =await checkStatementWithGPT(statement, formattedRelevantData);
+      const gptResult = await checkStatementWithGPT(statement, formattedRelevantData);
+      console.log("GPT RESULT: ", gptResult)
 
-      const { isMisinformation, reasoning, verifiedInfo } = parseGptResult(result);
-
-
-      await dataController.saveStatement({ body: { statement, isMisinformation, reasoning, verifiedInfo } }, res);
-
-      res.status(200).json({ result });
+      const { isMisinformation, reasoning, verifiedInfo } = parseGptResult(gptResult);
+      
+      return { statement, isMisinformation, reasoning, verifiedInfo };
     } catch (error) {
       console.error('Error comparing statement:', error);
-      res.status(500).json({ error: 'Failed to compare statement' });
+      throw new Error('Failed to compare statement');
     }
   },
+
+  async saveStatement({ statement, isMisinformation, reasoning, verifiedInfo }) {
+    try {
+      const db = await getFirestore();
+      const statementRef = db.collection('statements').doc(String(Date.now()));
+      await statementRef.set({
+        statement,
+        isMisinformation,
+        reasoning,
+        verifiedInfo,
+        dateSaved: new Date(),
+      });
+      console.log('Statement saved successfully:', { statement, isMisinformation, reasoning, verifiedInfo });
+    } catch (error) {
+      console.error('Error saving statement:', error);
+      throw new Error('Failed to save statement');
+    }
+  }
 };
 
+// Function to fetch verified data from Firestore
 async function fetchVerifiedDataFromFirestore() {
-  const verifiedData = [];const db = await getFirestore();
+  const verifiedData = [];
+  const db = await getFirestore();
   
   const querySnapshot = await db.collection('mpoxResources').get();
   querySnapshot.forEach((doc) => {
@@ -48,53 +64,40 @@ async function fetchVerifiedDataFromFirestore() {
   return verifiedData;
 }
 
-// Function to identify relevant items using NLP
+// NLP function to identify relevant items based on token similarity
 function identifyRelevantItems(statement, verifiedData) {
-  
-  // Tokenize and stem the statement
   const statementTokens = tokenizer.tokenize(statement).map(token => stemmer.stem(token.toLowerCase()));
-
-  // Array to hold relevant items
   const relevantItems = [];
 
   verifiedData.forEach(item => {
-  try {
-    // Combine item title and description for comparison
-    const itemText = `${item.title} ${item.description} ${item.content}`; 
-    const itemTokens = tokenizer.tokenize(itemText).map(token => stemmer.stem(token.toLowerCase()));
-
-    // Calculate similarity
-    const similarityScore = calculateSimilarity(statementTokens, itemTokens);
-
-    // Define a threshold for relevance (e.g., 0.2)
-    const similarityThreshold = 0.02;
-
-    // If similarity score exceeds the threshold, consider it relevant
-    if (similarityScore >= similarityThreshold) {
-      relevantItems.push({ item, similarityScore }); 
-    }
-  } catch (error) {
+    try {
+      const itemText = `${item.title} ${item.description} ${item.content}`;
+      const itemTokens = tokenizer.tokenize(itemText).map(token => stemmer.stem(token.toLowerCase()));
+      const similarityScore = calculateSimilarity(statementTokens, itemTokens);
+      
+      const similarityThreshold = 0.02;
+      if (similarityScore >= similarityThreshold) {
+        relevantItems.push({ item, similarityScore }); 
+      }
+    } catch (error) {
       console.error(`Error processing item ${item.title}:`, error);
-  }
+    }
   });
-  relevantItems.sort((a, b) => b.similarityScore - a.similarityScore);
 
-  // Return only the items without their scores
+  relevantItems.sort((a, b) => b.similarityScore - a.similarityScore);
   return relevantItems.map(entry => entry.item);
 }
 
-// Function to calculate similarity score based on Jaccard index
+// Function to calculate similarity using Jaccard index
 function calculateSimilarity(tokens1, tokens2) {
   const set1 = new Set(tokens1);
   const set2 = new Set(tokens2);
-
   const intersection = new Set([...set1].filter(token => set2.has(token))).size;
   const union = new Set([...set1, ...set2]).size;
-
-  // Calculate Jaccard similarity score
   return intersection / union;
 }
 
+// Function to parse the GPT result
 function parseGptResult(result) {
   let output = {
     isMisinformation: null,
@@ -103,7 +106,7 @@ function parseGptResult(result) {
   };
 
   try {
-    parsedData = JSON.parse(result);
+    const parsedData = JSON.parse(result);
 
     output.isMisinformation = parsedData.isMisinformation;
     output.reasoning = parsedData.reasoning;
@@ -112,8 +115,7 @@ function parseGptResult(result) {
   } catch (error) {
     console.error('Error parsing GPT result using JSON:', error);
 
-    // Using regex to extract information
-    // Fallback if json parsing fails
+    // Use regex as a fallback to extract the necessary information
     const flagMatch = result.match(/isMisinformation:\s*(True|False)/i);
     const reasoningMatch = result.match(/reasoning:\s*([^\n]*)/i);
     const verifiedInfoMatch = result.match(/verifiedInfo:\s*([^\n]*)/i);
@@ -125,6 +127,5 @@ function parseGptResult(result) {
 
   return output;
 }
-
 
 module.exports = compareController;
