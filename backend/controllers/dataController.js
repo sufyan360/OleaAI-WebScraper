@@ -1,6 +1,8 @@
-const {collection, addDoc, getDocs, serverTimestamp } = require("firebase/firestore");
 const statementModel = require('../models/statementModel');
 const { getFirestore } = require('../firebase');
+const admin = require('firebase-admin');
+const { FieldValue } = admin.firestore; // Importing FieldValue to use serverTimestamp
+
 
 const dataController = {
   
@@ -18,14 +20,14 @@ const dataController = {
 
     try {
       const db = await getFirestore();
-      const docRef = await addDoc(collection(db, 'statements'), {
+      const docRef = await db.collection('mpoxResources').add({
         statement,
         result: {
           isMisinformation: isMisinformation,
           reasoning: reasoning,
           verifiedInfo: verifiedInfo,
         },
-        createdAt: serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
 
       return { id: docRef.id, message: 'Statement saved successfully' };
@@ -37,8 +39,9 @@ const dataController = {
   },
 
   async getStatements(req, res) {
+    const db = await getFirestore();
     try {
-      const snapshot = await getDocs(collection(db, 'statements'));
+      const snapshot = await db.collection('statements').get();
       const statements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.status(200).json(statements);
     } catch (error) {

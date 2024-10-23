@@ -11,7 +11,7 @@ export async function POST(req) {
     const tweets = await rettiwt.tweet.search(
       { 
         includeWords: [keyword], 
-        excludeWords: ["#mpox"],
+        excludeWords: ['#mpox'],
         count: 25, 
         replies: false, 
         language: "en" 
