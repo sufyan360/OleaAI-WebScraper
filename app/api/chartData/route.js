@@ -12,13 +12,13 @@ export async function GET() {
     const statements = snapshot.docs
       .map(doc => {
         const data = doc.data();
-        console.log("Original: ", data.dateSaved);
+        //console.log("Original: ", data.dateSaved);
 
         const date = data.dateSaved ? data.dateSaved.toDate() : null;
-        console.log("DATE: ", date);
+        //console.log("DATE: ", date);
 
         const formattedDate = date ? date.toLocaleDateString() : null;
-        console.log("Formatted: ", formattedDate);
+        //console.log("Formatted: ", formattedDate);
 
         // Only include entries with valid dates and isMisinformation set to true
         return date && data.isMisinformation ? { dateSaved: formattedDate } : null;

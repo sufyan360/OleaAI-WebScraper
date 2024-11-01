@@ -4,7 +4,7 @@ import { Rettiwt } from 'rettiwt-api';
 export async function POST(req) {
   try {
     const rettiwt = new Rettiwt({ apiKey: process.env.X_AUTH_HELPER_KEY, logging: true });
-    console.log("INSTANTIATED");
+    console.log("INSTANTIATED SCRAPER");
 
     // Define the search keyword and number of tweets set to 25
     const keyword = 'mpox';
@@ -23,7 +23,7 @@ export async function POST(req) {
       fullText: tweet.fullText
     }));
 
-    console.log(filteredTweets); 
+    //console.log(filteredTweets); 
     console.log("Tweets scraped Successfully")
     return NextResponse.json({ success: true, filteredTweets });
 

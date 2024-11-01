@@ -3,7 +3,7 @@ import { compareStatement, saveStatement } from '@/backend/controllers/compareCo
 
 export async function POST(req) {
   try {
-    console.log("LANDED");
+    console.log("LANDED MISNFO ROUTE");
     const { tweet } = await req.json();
 
     const statementData = {

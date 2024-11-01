@@ -18,6 +18,11 @@ export default function Home() {
     setTweets(fetchedTweets);
   };
 
+  /*
+        <Grid item xs={12} md={6}>
+          <WorldMap />
+        </Grid>
+  */
   return (
     <Container>
       <AppBar position="relative" 
@@ -63,9 +68,6 @@ export default function Home() {
           <TimeFrameChart />
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <WorldMap />
-        </Grid>
       </Grid>
 
       {/* Display the tweets at the bottom */}
