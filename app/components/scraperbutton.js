@@ -34,7 +34,7 @@ const ScraperButton = ({ onTweetsFetched }) => {
 
     } catch (error) {
       console.error('Error:', error);
-      //alert('Error starting scraping.');
+      alert('Error starting scraping.');
     }
     setLoading(false);
   };

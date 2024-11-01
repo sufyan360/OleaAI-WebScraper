@@ -19,9 +19,17 @@ export default function Home() {
   };
 
   /*
+        World map doesnt work so moved here
         <Grid item xs={12} md={6}>
           <WorldMap />
         </Grid>
+
+        Unecessary to show all the tweets that got scraped
+        {tweets.length > 0 && (
+          <Box mt={4}>
+            <TweetsList tweets={tweets} />
+          </Box>
+        )}
   */
   return (
     <Container>
@@ -63,19 +71,15 @@ export default function Home() {
 
       <ScraperButton onTweetsFetched={handleTweetsFetched} />
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={6}>
+      <Grid container spacing={3} sx={{ mt: 2, display:'flex', justifyContent:'center' }}>
+        <Grid item xs={12} md={9}>
           <TimeFrameChart />
         </Grid>
 
       </Grid>
 
       {/* Display the tweets at the bottom */}
-      {tweets.length > 0 && (
-        <Box mt={4}>
-          <TweetsList tweets={tweets} />
-        </Box>
-      )}
+
       <Box>
         <MisinformationTweets />
       </Box>
