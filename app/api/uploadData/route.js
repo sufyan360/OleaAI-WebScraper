@@ -18,7 +18,7 @@ export async function POST(req) {
         //console.log(`Uploaded tweet with ID ${tweetId}`);
 
         // Call the new route to check for misinformation
-        const response = await fetch('http://localhost:3000/api/checkMisinformation', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/checkMisinformation`, {
           method: 'POST',
           body: JSON.stringify({ tweet }),  // Pass the tweet to the misinformation route
           headers: {

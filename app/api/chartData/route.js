@@ -25,7 +25,7 @@ export async function GET() {
       })
       .filter(statement => statement !== null); // Remove any null values from the array
 
-    console.log("Filtered Statements: ", statements);
+    //console.log("Filtered Statements: ", statements);
     return NextResponse.json({ statements }, { status: 200 });
   } catch (error) {
     console.error('Error fetching statements:', error);
