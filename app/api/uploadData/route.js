@@ -15,10 +15,10 @@ export async function POST(req) {
       if (existingTweetQuery.empty) {
         // Upload the tweet to Firestore
         await collectionRef.add({ ...tweet, id: tweetId });
-        console.log(`Uploaded tweet with ID ${tweetId}`);
+        //console.log(`Uploaded tweet with ID ${tweetId}`);
 
         // Call the new route to check for misinformation
-        const response = await fetch('http://localhost:3000/api/checkMisinformation', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/checkMisinformation`, {
           method: 'POST',
           body: JSON.stringify({ tweet }),  // Pass the tweet to the misinformation route
           headers: {

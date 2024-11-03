@@ -1,108 +1,142 @@
 // components/TimeFrameChart.js
-"use client"; // Ensure this is a client component
-
-import { useState } from 'react';
-import { Line } from 'react-chartjs-2';
+"use client";
+import { useEffect, useState } from 'react';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  CategoryScale, 
+  CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
 import { Button, ButtonGroup, Card, CardContent, Typography, Box } from '@mui/material';
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
 
-// Register the components we need in Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const TimeFrameChart = () => {
-  const [timeFrame, setTimeFrame] = useState('weekly');
+  const [timeFrame, setTimeFrame] = useState('week');
+  const [dataPoints, setDataPoints] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, [timeFrame]);
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch('/api/chartData');
+      if (!response.ok) throw new Error('Error fetching data');
+      
+      const { statements } = await response.json();
+      const filteredData = transformData(statements, timeFrame);
+      setDataPoints(filteredData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  // Transform the data based on the selected time frame
+  const transformData = (data, frame) => {
+    const now = new Date();
+    let intervals;
+    let dateFormat;
+
+    if (frame === 'week') {
+      intervals = eachDayOfInterval({ start: startOfWeek(now), end: endOfWeek(now) });
+      dateFormat = 'EEE';
+    } else if (frame === 'month') {
+      intervals = eachWeekOfInterval({ start: startOfMonth(now), end: endOfMonth(now) });
+      dateFormat = "'Week' w";
+    } else if (frame === 'year') {
+      intervals = eachMonthOfInterval({ start: startOfYear(now), end: endOfYear(now) });
+      dateFormat = 'MMM';
+    } else if (frame === 'all') {
+      intervals = eachMonthOfInterval({ start: new Date('2024-10-01'), end: now });
+      dateFormat = 'MMM yyyy';
+    }
+
+    // Count occurrences within each interval
+    return intervals.map(intervalStart => {
+      const intervalEnd = frame === 'week'
+        ? intervalStart
+        : frame === 'month'
+        ? new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+        : new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0);
+
+      const count = data.filter(doc => {
+        const dateSaved = new Date(doc.dateSaved);
+        return dateSaved >= intervalStart && dateSaved <= intervalEnd;
+      }).length;
+
+      return { label: format(intervalStart, dateFormat), count };
+    });
+  };
+
+  const labels = dataPoints.map(point => point.label);
+  const datasetData = dataPoints.map(point => point.count);
 
   const data = {
-    labels:
-      timeFrame === 'daily'
-        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        : timeFrame === 'weekly'
-        ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels,
     datasets: [
       {
         label: 'Misinformation Tweets',
-        data:
-          timeFrame === 'daily'
-            ? [5, 10, 8, 15, 9, 12, 20]
-            : timeFrame === 'weekly'
-            ? [50, 80, 100, 60]
-            : [120, 300, 250, 350, 400, 450, 500, 600, 700, 800, 850, 900],
-        fill: false,
-        borderColor: '#849785', // Updated color scheme
-        tension: 0.1,
+        data: datasetData,
+        backgroundColor: '#849785',
       },
     ],
+  };
+
+  const options = {
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1 }, // To keep the Y-axis positive and integer-based for counts
+      },
+    },
   };
 
   return (
     <Card sx={{ mt: 2 }}>
       <CardContent>
         <Typography variant="h5" component="div" gutterBottom sx={{ color: '#849785', fontWeight: 'bold' }}>
-          Tweets Over Time
+          Misinformation Tweets Over Time
         </Typography>
 
         <ButtonGroup variant="contained" aria-label="time frame button group">
           <Button
-            onClick={() => setTimeFrame('daily')}
-            disabled={timeFrame === 'daily'}
-            sx={{
-              backgroundColor: timeFrame === 'daily' ? '#849785' : '#849785',
-              color: '#fafafa',
-              '&:hover': {
-                backgroundColor: '#849785', // Keep consistent hover state
-              }
-            }}
+            onClick={() => setTimeFrame('week')}
+            disabled={timeFrame === 'week'}
+            sx={{ backgroundColor: timeFrame === 'week' ? '#849785' : '#849785', color: '#fafafa', '&:hover': { backgroundColor: '#849785' } }}
           >
-            Daily
+            Week
           </Button>
           <Button
-            onClick={() => setTimeFrame('weekly')}
-            disabled={timeFrame === 'weekly'}
-            sx={{
-              backgroundColor: timeFrame === 'weekly' ? '#849785' : '#849785',
-              color: '#fafafa',
-              '&:hover': {
-                backgroundColor: '#849785', // Keep consistent hover state
-              }
-            }}
+            onClick={() => setTimeFrame('month')}
+            disabled={timeFrame === 'month'}
+            sx={{ backgroundColor: timeFrame === 'month' ? '#849785' : '#849785', color: '#fafafa', '&:hover': { backgroundColor: '#849785' } }}
           >
-            Weekly
+            Month
           </Button>
           <Button
-            onClick={() => setTimeFrame('monthly')}
-            disabled={timeFrame === 'monthly'}
-            sx={{
-              backgroundColor: timeFrame === 'monthly' ? '#849785' : '#849785',
-              color: '#fafafa',
-              '&:hover': {
-                backgroundColor: '#849785', // Keep consistent hover state
-              }
-            }}
+            onClick={() => setTimeFrame('year')}
+            disabled={timeFrame === 'year'}
+            sx={{ backgroundColor: timeFrame === 'year' ? '#849785' : '#849785', color: '#fafafa', '&:hover': { backgroundColor: '#849785' } }}
           >
-            Monthly
+            Year
+          </Button>
+          <Button
+            onClick={() => setTimeFrame('all')}
+            disabled={timeFrame === 'all'}
+            sx={{ backgroundColor: timeFrame === 'all' ? '#849785' : '#849785', color: '#fafafa', '&:hover': { backgroundColor: '#849785' } }}
+          >
+            All
           </Button>
         </ButtonGroup>
 
         <Box mt={2}>
-          <Line data={data} />
+          <Bar data={data} options={options} />
         </Box>
       </CardContent>
     </Card>

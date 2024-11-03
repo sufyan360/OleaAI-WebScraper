@@ -8,7 +8,8 @@ import { Container, Typography, Grid, Box, AppBar, Toolbar, IconButton, Link} fr
 import { useState } from 'react';
 import FetchMpoxData from './components/fetchMpoxDataButton';
 import MisinformationTweets from './components/misinformationTweets';
-import { Facebook, Twitter, Instagram, LinkedIn } from '@mui/icons-material';
+import Icon from '@mdi/react';
+import { mdiFacebook as Facebook, mdiTwitter as Twitter, mdiLinkedin as LinkedIn } from '@mdi/js';
 
 export default function Home() {
   const [tweets, setTweets] = useState([]);
@@ -17,6 +18,19 @@ export default function Home() {
     setTweets(fetchedTweets);
   };
 
+  /*
+        World map doesnt work so moved here
+        <Grid item xs={12} md={6}>
+          <WorldMap />
+        </Grid>
+
+        Unecessary to show all the tweets that got scraped
+        {tweets.length > 0 && (
+          <Box mt={4}>
+            <TweetsList tweets={tweets} />
+          </Box>
+        )}
+  */
   return (
     <Container>
       <AppBar position="relative" 
@@ -57,22 +71,15 @@ export default function Home() {
 
       <ScraperButton onTweetsFetched={handleTweetsFetched} />
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={6}>
+      <Grid container spacing={3} sx={{ mt: 2, display:'flex', justifyContent:'center' }}>
+        <Grid item xs={12} md={9}>
           <TimeFrameChart />
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <WorldMap />
-        </Grid>
       </Grid>
 
       {/* Display the tweets at the bottom */}
-      {tweets.length > 0 && (
-        <Box mt={4}>
-          <TweetsList tweets={tweets} />
-        </Box>
-      )}
+
       <Box>
         <MisinformationTweets />
       </Box>
@@ -100,18 +107,9 @@ export default function Home() {
           </Link>
         </Box>
         <Box>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Facebook />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Twitter />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <Instagram />
-          </IconButton>
-          <IconButton href="" sx={{ color: 'white' }}>
-            <LinkedIn />
-          </IconButton>
+          <Icon path={Facebook} size={1} href="" sx={{ color: 'white' }} />
+          <Icon path={Twitter} size={1} href="" sx={{ color: 'white' }} />
+          <Icon path={LinkedIn} size={1} href="" sx={{ color: 'white' }} />
         </Box>
       </Box>
     </Container>
