@@ -1,6 +1,7 @@
 'use client';
 import { Button, CircularProgress, Box } from '@mui/material';
 import { useState } from 'react';
+import axios from 'axios';
 
 const ScraperButton = ({ onTweetsFetched }) => {
   const [loading, setLoading] = useState(false);
@@ -8,28 +9,10 @@ const ScraperButton = ({ onTweetsFetched }) => {
   const startScraping = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/scrapeData', { method: 'POST' });
+      const response = await axios.get('http://localhost:5001/api/fetch-upload-tweets');
 
-      if (!response.ok) {
-        throw new Error('Failed to scrape tweets');
-      }
-
-      const data = await response.json();
-
-      if (data && data.filteredTweets) {
-        onTweetsFetched(data.filteredTweets);  // Update the UI with fetched tweets
-
-        // Upload scraped tweets to Firebase
-        await fetch('/api/uploadData', {
-          method: 'POST',
-          body: JSON.stringify({ tweets: data.filteredTweets }),  // Send tweets to upload
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        console.log('Tweets uploaded successfully!');
-        
+      if (response.status !== 200) {
+        throw new Error('Failed to scrape and upload tweets');
       }
 
     } catch (error) {

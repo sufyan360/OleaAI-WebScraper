@@ -30,8 +30,7 @@ const dataController = {
         createdAt: FieldValue.serverTimestamp(),
       });
 
-      return { id: docRef.id, message: 'Statement saved successfully' };
-
+      return res.status(200).json({ id: docRef.id, message: 'Statement saved successfully' });
     } catch (error) {
       console.error('Error saving statement:', error);
       res.status(500).json({ error: 'Failed to save statement' });
@@ -47,6 +46,30 @@ const dataController = {
     } catch (error) {
       console.error('Error fetching statements:', error);
       res.status(500).json({ error: 'Failed to fetch statements' });
+    }
+  },
+  async getFilteredStatements(req, res) {
+    try {
+      console.log("LANDED in charData");
+      const db = await getFirestore();
+      const collectionRef = db.collection('statements');
+      const snapshot = await collectionRef.get();
+  
+      // Extract valid data where isMisinformation is true
+      const statements = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          const date = data.dateSaved ? data.dateSaved.toDate() : null;
+          const formattedDate = date ? date.toLocaleDateString() : null;
+          
+          return date && data.isMisinformation ? { dateSaved: formattedDate } : null;
+        })
+        .filter(statement => statement !== null); // Remove any null values from the array
+  
+      res.status(200).json({ statements });
+    } catch (error) {
+      console.error('Error fetching filtered statements:', error);
+      res.status(500).json({ error: 'Failed to fetch filtered statements' });
     }
   },
 };

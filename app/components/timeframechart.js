@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,10 +27,11 @@ const TimeFrameChart = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/chartData');
-      if (!response.ok) throw new Error('Error fetching data');
-      
-      const { statements } = await response.json();
+      const response = await axios.get('http://localhost:5001/mpox/misinformation-history');
+      if (response.status !== 200) {
+        throw new Error('Error fetching data');
+      }
+      const { statements } = response.data;
       const filteredData = transformData(statements, timeFrame);
       setDataPoints(filteredData);
     } catch (error) {

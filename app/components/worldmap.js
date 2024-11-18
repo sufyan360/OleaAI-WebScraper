@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
-import TweetMap from '../api/loadMap/route';  // Import TweetMap
+import TweetMap from '../utilities/loadMap';  // Import TweetMap
 
 const locations = [
   { id: 1, coordinates: { lat: 51.505, lng: -0.09 }, text: 'Tweet from London', location: 'London, UK' },

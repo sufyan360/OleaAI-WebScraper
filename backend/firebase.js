@@ -1,3 +1,4 @@
+require('dotenv').config();
 const admin = require('firebase-admin');
 const fs = require('fs').promises;
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -19,8 +20,8 @@ async function initializeFirebase() {
   }
 }
 
+initializeFirebase();
 async function getFirestore() {
-  await initializeFirebase();
   return admin.firestore();  
 }
 

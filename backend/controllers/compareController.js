@@ -28,28 +28,10 @@ const compareController = {
       
       return { statement, isMisinformation, reasoning, verifiedInfo };
     } catch (error) {
-      console.error('Error comparing statement:', error);
+      console.error('Error comparing statement:', error.message);
       throw new Error('Failed to compare statement');
     }
   },
-
-  async saveStatement({ statement, isMisinformation, reasoning, verifiedInfo }) {
-    try {
-      const db = await getFirestore();
-      const statementRef = db.collection('statements').doc(String(Date.now()));
-      await statementRef.set({
-        statement,
-        isMisinformation,
-        reasoning,
-        verifiedInfo,
-        dateSaved: new Date(),
-      });
-      console.log('Statement saved successfully:', { statement, isMisinformation, reasoning, verifiedInfo });
-    } catch (error) {
-      console.error('Error saving statement:', error);
-      throw new Error('Failed to save statement');
-    }
-  }
 };
 
 // Function to fetch verified data from Firestore

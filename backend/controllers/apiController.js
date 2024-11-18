@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { getFirestore } = require('../firebase'); 
-const { checkStatementWithGPT } = require('../services/gptService');
+const compareController = require('./compareController');
+const { Rettiwt } = require('rettiwt-api');
 
 const apiController = {
   async fetchMpoxData(req, res) {
@@ -30,16 +31,7 @@ const apiController = {
         const docSnapshot = await resourceRef.get();
         console.log("Checked if resource exists");
 
-        let isMisinformation = null;
-        let reasoning = null;
-        let verifiedInfo = null;
-
         if (!docSnapshot.exists) {
-          const verificationData = await checkStatementWithGPT(title, content);
-          isMisinformation = verificationData.isMisinformation;
-          reasoning = verificationData.reasoning;
-          verifiedInfo = verificationData.verifiedInfo;
-
           // Add new resource to Firestore
           await resourceRef.set({
             source,
@@ -47,9 +39,6 @@ const apiController = {
             description,
             content,
             dateFetched: new Date(),
-            isMisinformation,
-            reasoning,
-            verifiedInfo,
           });
         } else {
           // Update existing resource if needed
@@ -66,10 +55,7 @@ const apiController = {
           source,
           title,
           description,
-          content,
-          isMisinformation,
-          reasoning,
-          verifiedInfo,
+          content
         };
       }));
 
@@ -79,95 +65,71 @@ const apiController = {
       res.status(500).json({ error: 'Failed to fetch mpox data' });
     }
   },
-
-  async compareStatement(req, res) {
-    const { statement } = req.body;
-
+  async fetchAndUploadTweets(req, res) {
     try {
-      const db = await getFirestore(); 
-      const verifiedData = await fetchVerifiedDataFromFirestore(db);
+      const rettiwt = new Rettiwt({ apiKey: process.env.X_AUTH_HELPER_KEY, logging: true });
+      console.log("INSTANTIATED SCRAPER");
+  
+      // Define the search keyword and number of tweets set to 25
+      const keyword = 'mpox';
+      const tweets = await rettiwt.tweet.search(
+        { 
+          includeWords: [keyword], 
+          excludeWords: ['#mpox'],
+          count: 25, 
+          replies: false, 
+          language: "en" 
+        });
+  
+      const filteredTweets = tweets.list.map(tweet => ({
+        id: tweet.id,
+        createdAt: tweet.createdAt,
+        fullText: tweet.fullText
+      }));
+  
+      //console.log(filteredTweets); 
+      console.log("Tweets scraped Successfully")
 
-      const MAX_VERIFIED_ITEMS = 25; // Adjust as necessary
+      const db = await getFirestore();
+      const collectionRef = db.collection('tweets');
 
-      const relevantItems = identifyRelevantItems(statement, verifiedData).slice(0, MAX_VERIFIED_ITEMS);
+      for (let tweet of filteredTweets) {
+        const tweetId = tweet.id;
 
-      const formattedRelevantData = relevantItems.map(item => `
-        Source: ${item.source}
-        Title: ${item.title}
-        Description: ${item.description}
-        Content: ${item.content}
-      `).join('\n');
+      // Check if the tweet already exists in Firestore
+      const existingTweetQuery = await collectionRef.where('id', '==', tweetId).get();
+      if (existingTweetQuery.empty) {
+        // Upload the tweet to Firestore
+        await collectionRef.add({ ...tweet, id: tweetId });
+        console.log(`Uploaded tweet with ID ${tweetId}`);
 
-      const result = await checkStatementWithGPT(statement, formattedRelevantData);
-      const { isMisinformation, reasoning, verifiedInfo } = parseGptResult(result);
+        // Call the new route to check for misinformation
+        // Use compareStatement method directly instead of making an HTTP request
+        const { statement, isMisinformation, reasoning, verifiedInfo } = await compareController.compareStatement({
+          body: { statement: tweet.fullText }
+        });
 
-      // Save the statement after comparison
-      await this.saveStatement({ body: { statement, isMisinformation, reasoning, verifiedInfo } }, res);
+        console.log(`Misinformation check result for tweet ID ${tweetId}:`, {
+          isMisinformation,
+          reasoning,
+          verifiedInfo,
+        });
 
-      res.status(200).json({ result });
-    } catch (error) {
-      console.error('Error comparing statement:', error);
-      res.status(500).json({ error: 'Failed to compare statement' });
-    }
-  },
+        } else {
+          console.log(`Duplicate tweet with ID ${tweetId} skipped.`);
+        }
+      }
 
-  async saveStatement(req, res) {
-    const { statement, isMisinformation, reasoning, verifiedInfo } = req.body;
-
-    try {
-      const db = await getFirestore(); // Initialize Firestore instance
-      const statementRef = doc(collection(db, 'statements'), String(Date.now())); // Use a timestamp as the document ID
-      await setDoc(statementRef, {
-        statement,
-        isMisinformation,
-        reasoning,
-        verifiedInfo,
-        dateSaved: new Date(),
+        console.log("Tweets Uploaded and Sent for Misinformation Check");
+      res.status(200).json({ 
+        message: 'Tweets fetched, uploaded, and checked for misinformation successfully',
+        tweets: filteredTweets 
       });
-
-      res.status(200).json({ message: 'Statement saved successfully' });
     } catch (error) {
-      console.error('Error saving statement:', error);
-      res.status(500).json({ error: 'Failed to save statement' });
+      console.error('Error fetching and uploading tweets:', error);
+      res.status(500).json({ message: 'Error fetching and uploading tweets', error });
     }
-  },
-
-  async getStatements(req, res) {
-    try {
-      const db = await getFirestore(); // Initialize Firestore instance
-      const verifiedData = await fetchVerifiedDataFromFirestore(db);
-      res.status(200).json({ statements: verifiedData });
-    } catch (error) {
-      console.error('Error fetching statements:', error);
-      res.status(500).json({ error: 'Failed to fetch statements' });
-    }
-  },
-};
-
-// Helper function to fetch verified data from Firestore
-async function fetchVerifiedDataFromFirestore(db) {
-  const verifiedData = [];
-  const querySnapshot = await getDocs(collection(db, 'mpoxResources'));
-  querySnapshot.forEach((doc) => {
-    verifiedData.push(doc.data());
-  });
-  return verifiedData;
-}
-
-// Function to identify relevant items using NLP
-function identifyRelevantItems(statement, verifiedData) {
-  return verifiedData.filter(item => 
-    item.title.includes(statement) || item.description.includes(statement)
-  );
-}
-
-// Function to parse the GPT result
-function parseGptResult(result) {
-  return {
-    isMisinformation: result.isMisinformation,
-    reasoning: result.reasoning,
-    verifiedInfo: result.verifiedInfo,
-  };
+  }
 }
 
 module.exports = apiController;
