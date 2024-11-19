@@ -1,5 +1,5 @@
 const { collection, getDocs, doc, setDoc } = require("firebase/firestore");
-const initializeFirebase = require("../firebase"); // Adjust path to your Firebase setup
+const initializeFirebase = require(".../firebase"); 
 const { checkStatementWithGPT } = require("../services/gptService");
 const natural = require("natural");
 const tokenizer = new natural.WordTokenizer();

@@ -7,6 +7,7 @@ import {
   startOfWeek,
   startOfMonth,
   startOfYear,
+  endOfDay,
   endOfWeek,
   endOfMonth,
   endOfYear,
@@ -54,12 +55,14 @@ const TimeFrameChart = () => {
 
   const transformData = (timestamps, frame) => {
     const now = new Date();
-    let intervals;
-    let dateFormat;
-
-    // Define intervals and date formats for each time frame
+    let intervals = [];
+    let dateFormat = "";
+  
     if (frame === "week") {
-      intervals = eachDayOfInterval({ start: startOfWeek(now), end: endOfWeek(now) });
+      const start = startOfWeek(now);
+      const end = endOfWeek(now);
+  
+      intervals = eachDayOfInterval({ start, end });
       dateFormat = "EEE";
     } else if (frame === "month") {
       intervals = eachWeekOfInterval({ start: startOfMonth(now), end: endOfMonth(now) });
@@ -71,21 +74,23 @@ const TimeFrameChart = () => {
       intervals = eachMonthOfInterval({ start: new Date("2024-10-01"), end: now });
       dateFormat = "MMM yyyy";
     }
-
-    // Count occurrences of timestamps within each interval
+    
     return intervals.map((intervalStart) => {
-      const intervalEnd =
-        frame === "week"
-          ? intervalStart
-          : frame === "month"
-          ? new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-          : new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0);
-
-      const count = timestamps.filter((timestamp) => timestamp >= intervalStart && timestamp <= intervalEnd).length;
-
+      const intervalEnd = frame === "week" ? endOfDay(intervalStart) : 
+                          frame === "month" ? new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000) :
+                          new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0);
+  
+      const count = timestamps.filter((timestamp) => {
+        const inRange = timestamp >= intervalStart && timestamp <= intervalEnd;
+        if (!inRange) console.log("Out of range:", timestamp, intervalStart, intervalEnd);
+        return inRange;
+      }).length;
+  
       return { label: format(intervalStart, dateFormat), count };
     });
   };
+  
+  
 
   const labels = dataPoints.map((point) => point.label);
   const datasetData = dataPoints.map((point) => point.count);
