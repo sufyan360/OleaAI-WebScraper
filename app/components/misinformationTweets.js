@@ -1,14 +1,13 @@
 import { Card, CardContent, Typography, Box, CircularProgress, Avatar } from "@mui/material";
 import React, { useState, useEffect } from "react";
 
-// Fetch statements from your Next.js API route
 const fetchStatements = async () => {
-  const response = await fetch("/api/getStatements");
+  const response = await fetch("/api/getMisinformation");
   if (!response.ok) {
-    throw new Error("Failed to fetch statements");
+    throw new Error("Failed to fetch misinformation data");
   }
   const data = await response.json();
-  return data.statements;
+  return data.statements; // This will now contain the complete misinformation entries
 };
 
 const MisinformationTweets = () => {
@@ -19,17 +18,9 @@ const MisinformationTweets = () => {
     const fetchTweets = async () => {
       try {
         const data = await fetchStatements();
+        //console.log("Fetched Misinformation Tweets: ", data);
 
-        // Safely filter tweets where result exists and isMisinformation is true
-        const filteredTweets = data
-          .filter((tweet) => tweet.result && tweet.result.isMisinformation)
-          .map((tweet) => ({
-            statement: tweet.statement,
-            reasoning: tweet.result.reasoning || "No reasoning provided",
-            verifiedInfo: tweet.result.verifiedInfo || "No verified info available",
-          }));
-
-        setMisinformationTweets(filteredTweets);
+        setMisinformationTweets(data);
       } catch (error) {
         console.error("Error fetching tweets:", error);
       } finally {
@@ -41,7 +32,21 @@ const MisinformationTweets = () => {
   }, []);
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" mt={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!misinformationTweets.length) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" mt={4}>
+        <Typography variant="h6" component="p">
+          No misinformation tweets found.
+        </Typography>
+      </Box>
+    );
   }
 
   return (
@@ -49,16 +54,9 @@ const MisinformationTweets = () => {
       {misinformationTweets.map((item, index) => (
         <Card key={index} sx={{ width: "100%", maxWidth: 600, mb: 6 }}>
           <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6" component="p" sx={{ fontWeight: "bold" }}>
-                Misinformation Tweet
-              </Typography>
-              <Avatar
-                alt="Tweet Image"
-                src="https://help.iubenda.com/wp-content/uploads/2020/05/twitter.png"
-                sx={{ width: 56, height: 56, marginLeft: 2 }}
-              />
-            </Box>
+            <Typography variant="h6" component="p" sx={{ fontWeight: "bold" }}>
+              Misinformation Tweet
+            </Typography>
             <Typography variant="body1" component="p" sx={{ marginBottom: 3, color: "black" }}>
               {item.statement}
             </Typography>

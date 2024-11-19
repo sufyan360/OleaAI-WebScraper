@@ -24,7 +24,7 @@ export async function POST(req) {
       isMisinformation,
       reasoning,
       verifiedInfo,
-      createdAt: new Date(),
+      dateSaved: new Date(),
     });
 
     //console.log(`Misinformation result saved with ID: ${docRef.id}`);
