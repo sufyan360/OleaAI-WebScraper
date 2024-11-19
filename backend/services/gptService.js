@@ -38,9 +38,9 @@ const checkStatementWithGPT = async (statement, verifiedData) => {
     Verified Data: ${verifiedData}
   `;
     
-    console.log('Sending request to GPT API...');
-    console.log(`System Prompt: ${systemPrompt}`);
-    console.log(`User Prompt: ${userPrompt}`);
+    // console.log('Sending request to GPT API...');
+    // console.log(`System Prompt: ${systemPrompt}`);
+    // console.log(`User Prompt: ${userPrompt}`);
 
     
   const response = await axios.post( 'https://openrouter.ai/api/v1/chat/completions',
@@ -67,21 +67,23 @@ const checkStatementWithGPT = async (statement, verifiedData) => {
 }
 };
 
-// Process the streaming response correctly
 const processStream = async (stream) => {
+  let buffer = ''; // Accumulate incomplete JSON data
   let completeResponse = '';
 
-  // Read the stream asynchronously
   for await (const chunk of stream) {
-    // Convert chunk to string
     const chunkStr = chunk.toString();
-    
-    const lines = chunkStr.split('\n');
+
+    // Accumulate chunks in the buffer
+    buffer += chunkStr;
+
+    // Attempt to extract complete JSON objects line by line
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // Retain the last incomplete line in the buffer
 
     for (const line of lines) {
       if (line.startsWith('data: ')) {
         const jsonData = line.replace('data: ', '').trim();
-
         if (jsonData === '[DONE]') continue;
 
         try {
@@ -93,17 +95,23 @@ const processStream = async (stream) => {
             }
           }
         } catch (error) {
-          console.error('Error parsing stream JSON:', error);
+          console.error('Error parsing line, skipping:', jsonData);
         }
       }
     }
   }
+
   console.log('Stream processing complete.');
   if (!completeResponse) {
     throw new Error('No response received from GPT');
   }
 
-  return completeResponse;
+  try {
+    return JSON.parse(completeResponse); // Parse the final response into JSON
+  } catch (error) {
+    console.error('Error parsing accumulated response:', completeResponse, error);
+    throw new Error('Failed to parse the complete GPT response');
+  }
 };
 
 module.exports = { checkStatementWithGPT };

@@ -1,27 +1,43 @@
-import { NextResponse } from 'next/server';
-import { compareStatement, saveStatement } from '@/backend/controllers/compareController';
+import { collection, addDoc } from "firebase/firestore";
+import db from "@/app/firebase";
+import { checkStatementWithGPT } from "@/backend/services/gptService";
 
 export async function POST(req) {
   try {
-    console.log("LANDED MISNFO ROUTE");
+    console.log("LANDED IN CHECK MISINFORMATION ROUTE");
+
     const { tweet } = await req.json();
 
     const statementData = {
       statement: tweet.fullText,
-      isMisinformation: null,
-      reasoning: null,
-      verifiedInfo: null
     };
 
-    // Compare statement for misinformation
-    const comparisonResult = await compareStatement({ body: statementData });
+    // Call GPT service to check for misinformation
+    const comparisonResult = await checkStatementWithGPT(statementData.statement);
 
-    // Save the statement and return the result
-    await saveStatement(comparisonResult);
+    // Ensure the comparisonResult includes the required fields
+    const { isMisinformation, reasoning, verifiedInfo } = comparisonResult;
 
-    return NextResponse.json({ message: 'Misinformation check complete' }, { status: 200 });
+    // Save the result to Firestore with separate fields
+    const docRef = await addDoc(collection(db, "statements"), {
+      statement: statementData.statement,
+      isMisinformation,
+      reasoning,
+      verifiedInfo,
+      createdAt: new Date(),
+    });
+
+    //console.log(`Misinformation result saved with ID: ${docRef.id}`);
+
+    return new Response(
+      JSON.stringify({ message: "Misinformation check complete" }),
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error checking misinformation:', error);
-    return NextResponse.json({ message: 'Error checking misinformation', error }, { status: 500 });
+      console.error("Error checking misinformation:", error);
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500 }
+      );
   }
 }

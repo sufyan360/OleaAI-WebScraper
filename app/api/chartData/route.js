@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/backend/firebase';
+import db from '@/app/firebase';
+import { collection, getDocs } from "firebase/firestore";
 
 export async function GET() {
   try {
-    console.log("LANDED in charData");
-    const db = await getFirestore();
-    const collectionRef = db.collection('statements');
-    const snapshot = await collectionRef.get();
+    //console.log("LANDED in chartData");
+    const snapshot = await getDocs(collection(db, "statements"));
+    //console.log("Set snapshot: ", snapshot)
 
     // Extract valid data where isMisinformation is true
     const statements = snapshot.docs

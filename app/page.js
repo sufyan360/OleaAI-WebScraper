@@ -3,7 +3,7 @@
 import ScraperButton from './components/scraperbutton';
 import TimeFrameChart from './components/timeframechart';
 import WorldMap from './components/worldmap';
-import TweetsList from './components/tweetsList'; // Import the new component
+import TweetsList from './components/tweetsList'; 
 import { Container, Typography, Grid, Box, AppBar, Toolbar, IconButton, Link} from '@mui/material';
 import { useState } from 'react';
 import FetchMpoxData from './components/fetchMpoxDataButton';

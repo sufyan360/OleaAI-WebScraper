@@ -1,54 +1,45 @@
-const statementModel = require('../models/statementModel');
-const { getFirestore } = require('../firebase');
-const admin = require('firebase-admin');
-const { FieldValue } = admin.firestore; // Importing FieldValue to use serverTimestamp
-
+import { db, serverTimestamp } from "../firebase";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 
 const dataController = {
-  
-  async saveStatement(req, res) {
-
-    if (!req.body) {
-      return res.status(400).json({ error: 'Request body is missing' });
-    }
-
-    const { statement, isMisinformation, reasoning, verifiedInfo} = req.body;
-
+  async saveStatement({ statement, isMisinformation, reasoning, verifiedInfo }) {
     if (!statement || isMisinformation === undefined || !reasoning || !verifiedInfo) {
-      return res.status(400).json({ error: 'Required fields are missing' });
+      throw new Error("Required fields are missing");
     }
 
     try {
-      const db = await getFirestore();
-      const docRef = await db.collection('mpoxResources').add({
+      const docRef = await addDoc(collection(db, "statements"), {
         statement,
         result: {
-          isMisinformation: isMisinformation,
-          reasoning: reasoning,
-          verifiedInfo: verifiedInfo,
+          isMisinformation,
+          reasoning,
+          verifiedInfo,
         },
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
       });
 
-      return { id: docRef.id, message: 'Statement saved successfully' };
-
+      console.log("Statement saved successfully:", { id: docRef.id });
+      return { id: docRef.id, message: "Statement saved successfully" };
     } catch (error) {
-      console.error('Error saving statement:', error);
-      res.status(500).json({ error: 'Failed to save statement' });
+      console.error("Error saving statement:", error);
+      throw new Error("Failed to save statement");
     }
   },
 
-  async getStatements(req, res) {
-    const db = await getFirestore();
+  async getStatements() {
     try {
-      const snapshot = await db.collection('statements').get();
-      const statements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      res.status(200).json(statements);
+      const snapshot = await getDocs(collection(db, "statements"));
+      const statements = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      console.log("Fetched statements successfully:", statements);
+      return statements;
     } catch (error) {
-      console.error('Error fetching statements:', error);
-      res.status(500).json({ error: 'Failed to fetch statements' });
+      console.error("Error fetching statements:", error);
+      throw new Error("Failed to fetch statements");
     }
   },
 };
 
-module.exports = dataController;
+export default dataController;

@@ -1,15 +1,14 @@
-const { checkStatementWithGPT } = require('../services/gptService');
-const dataController = require('./dataController');
-const natural = require('natural');
+const { collection, getDocs, doc, setDoc } = require("firebase/firestore");
+const initializeFirebase = require("../firebase"); // Adjust path to your Firebase setup
+const { checkStatementWithGPT } = require("../services/gptService");
+const natural = require("natural");
 const tokenizer = new natural.WordTokenizer();
 const stemmer = natural.PorterStemmer;
-const { getFirestore } = require('../firebase');
 
 const compareController = {
-  async compareStatement(req) {
-    const { statement } = req.body;
-
+  async compareStatement(statement) {
     try {
+      console.log("Landed compareController compareStatement function");
       const verifiedData = await fetchVerifiedDataFromFirestore();
       const MAX_VERIFIED_ITEMS = 3;
 
@@ -19,47 +18,46 @@ const compareController = {
         Title: ${item.title}
         Description: ${item.description}
         Content: ${item.content}
-      `).join('\n');
+      `).join("\n");
 
       const gptResult = await checkStatementWithGPT(statement, formattedRelevantData);
-      console.log("GPT RESULT: ", gptResult)
+      console.log("GPT RESULT: ", gptResult);
 
       const { isMisinformation, reasoning, verifiedInfo } = parseGptResult(gptResult);
-      
+
       return { statement, isMisinformation, reasoning, verifiedInfo };
     } catch (error) {
-      console.error('Error comparing statement:', error);
-      throw new Error('Failed to compare statement');
+      console.error("Error comparing statement:", error);
+      throw new Error("Failed to compare statement");
     }
   },
 
   async saveStatement({ statement, isMisinformation, reasoning, verifiedInfo }) {
     try {
-      const db = await getFirestore();
-      const statementRef = db.collection('statements').doc(String(Date.now()));
-      await statementRef.set({
+      const db = initializeFirebase();
+      const statementRef = doc(collection(db, "statements"), String(Date.now()));
+      await setDoc(statementRef, {
         statement,
         isMisinformation,
         reasoning,
         verifiedInfo,
         dateSaved: new Date(),
       });
-      console.log('Statement saved successfully:', { statement, isMisinformation, reasoning, verifiedInfo });
+      console.log("Statement saved successfully:", { statement, isMisinformation, reasoning, verifiedInfo });
     } catch (error) {
-      console.error('Error saving statement:', error);
-      throw new Error('Failed to save statement');
+      console.error("Error saving statement:", error);
+      throw new Error("Failed to save statement");
     }
-  }
+  },
 };
 
-// Function to fetch verified data from Firestore
+// Helper function to fetch verified data from Firestore
 async function fetchVerifiedDataFromFirestore() {
   const verifiedData = [];
-  const db = await getFirestore();
-  
-  const querySnapshot = await db.collection('mpoxResources').get();
+  const db = initializeFirebase();
+  const querySnapshot = await getDocs(collection(db, "mpoxResources"));
   querySnapshot.forEach((doc) => {
-    verifiedData.push(doc.data()); 
+    verifiedData.push(doc.data());
   });
   return verifiedData;
 }
@@ -74,10 +72,10 @@ function identifyRelevantItems(statement, verifiedData) {
       const itemText = `${item.title} ${item.description} ${item.content}`;
       const itemTokens = tokenizer.tokenize(itemText).map(token => stemmer.stem(token.toLowerCase()));
       const similarityScore = calculateSimilarity(statementTokens, itemTokens);
-      
+
       const similarityThreshold = 0.02;
       if (similarityScore >= similarityThreshold) {
-        relevantItems.push({ item, similarityScore }); 
+        relevantItems.push({ item, similarityScore });
       }
     } catch (error) {
       console.error(`Error processing item ${item.title}:`, error);
@@ -113,14 +111,14 @@ function parseGptResult(result) {
     output.verifiedInfo = parsedData.verifiedInfo;
 
   } catch (error) {
-    console.error('Error parsing GPT result using JSON:', error);
+    console.error("Error parsing GPT result using JSON:", error);
 
     // Use regex as a fallback to extract the necessary information
     const flagMatch = result.match(/isMisinformation:\s*(True|False)/i);
     const reasoningMatch = result.match(/reasoning:\s*([^\n]*)/i);
     const verifiedInfoMatch = result.match(/verifiedInfo:\s*([^\n]*)/i);
 
-    output.isMisinformation = flagMatch ? flagMatch[1].toLowerCase() === 'true' : null;
+    output.isMisinformation = flagMatch ? flagMatch[1].toLowerCase() === "true" : null;
     output.reasoning = reasoningMatch ? reasoningMatch[1].trim() : null;
     output.verifiedInfo = verifiedInfoMatch ? verifiedInfoMatch[1].trim() : null;
   }
